@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="1000" height="1000">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Rozha+One&amp;family=Noto+Serif+Devanagari:wght@800;900&amp;display=swap');
+      .logo-circle {
+        fill: #E31E24;
+      }
+      .brand-text-top {
+        font-family: 'Rozha One', 'Noto Serif Devanagari', 'Yatra One', serif;
+        font-size: 215px;
+        font-weight: 900;
+        fill: #FFFFFF;
+        text-anchor: middle;
+        dominant-baseline: auto;
+      }
+      .brand-text-bottom {
+        font-family: 'Rozha One', 'Noto Serif Devanagari', 'Yatra One', serif;
+        font-size: 195px;
+        font-weight: 900;
+        fill: #FFFFFF;
+        text-anchor: middle;
+        dominant-baseline: auto;
+      }
+    </style>
+  </defs>
+
+  <!-- Circular Red Emblem Background -->
+  <circle cx="500" cy="500" r="485" class="logo-circle" />
+
+  <!-- Top Line: राधिका -->
+  <text x="500" y="445" class="brand-text-top" letter-spacing="-1">राधिका</text>
+
+  <!-- Bottom Line: साड़ीज -->
+  <text x="500" y="715" class="brand-text-bottom" letter-spacing="1">साड़ीज</text>
+</svg>

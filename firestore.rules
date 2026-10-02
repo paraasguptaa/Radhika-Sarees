@@ -1,0 +1,118 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'parasguptaaa01@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // --- User Profiles ---
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['id', 'email']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.email is string && data.email.size() <= 128 &&
+        (!('name' in data) || (data.name is string && data.name.size() <= 100)) &&
+        (!('phone' in data) || (data.phone is string && data.phone.size() <= 25)) &&
+        (!('address' in data) || (data.address is string && data.address.size() <= 300));
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && isValidId(userId) && incoming().id == userId && isValidUserProfile(incoming());
+      allow update: if (isOwner(userId) || isAdmin()) && isValidId(userId) && incoming().id == existing().id && isValidUserProfile(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // --- Customer Reviews ---
+    function isValidReview(data) {
+      return data.keys().hasAll(['id', 'userName', 'rating', 'comment']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.userName is string && data.userName.size() > 0 && data.userName.size() <= 100 &&
+        data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+        data.comment is string && data.comment.size() > 0 && data.comment.size() <= 1000 &&
+        (!('userId' in data) || (data.userId is string && data.userId.size() <= 128)) &&
+        (!('sareeCategory' in data) || (data.sareeCategory is string && data.sareeCategory.size() <= 100)) &&
+        (!('location' in data) || (data.location is string && data.location.size() <= 100));
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isValidId(reviewId) && isValidReview(incoming()) && (
+        !('userId' in incoming()) || (isSignedIn() && incoming().userId == request.auth.uid)
+      );
+      allow update: if isAdmin() || (isSignedIn() && existing().userId == request.auth.uid && incoming().userId == request.auth.uid && isValidReview(incoming()));
+      allow delete: if isAdmin() || (isSignedIn() && existing().userId == request.auth.uid);
+    }
+
+    // --- Customer Orders ---
+    function isValidOrder(data) {
+      return data.keys().hasAll(['id', 'customerName', 'customerPhone', 'totalAmount', 'paymentMethod', 'orderStatus']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.customerName is string && data.customerName.size() > 0 && data.customerName.size() <= 120 &&
+        data.customerPhone is string && data.customerPhone.size() >= 10 && data.customerPhone.size() <= 20 &&
+        data.totalAmount is number && data.totalAmount >= 0 &&
+        data.paymentMethod is string && data.paymentMethod.size() <= 50 &&
+        data.orderStatus is string && data.orderStatus.size() <= 50 &&
+        (!('userId' in data) || (data.userId is string && data.userId.size() <= 128)) &&
+        (!('customerEmail' in data) || (data.customerEmail is string && data.customerEmail.size() <= 128)) &&
+        (!('shippingAddress' in data) || (data.shippingAddress is string && data.shippingAddress.size() <= 500)) &&
+        (!('paymentStatus' in data) || (data.paymentStatus is string && data.paymentStatus.size() <= 50)) &&
+        (!('itemCount' in data) || (data.itemCount is number));
+    }
+
+    match /orders/{orderId} {
+      allow get: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow list: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isValidId(orderId) && isValidOrder(incoming()) && (
+        !('userId' in incoming()) || (isSignedIn() && incoming().userId == request.auth.uid)
+      );
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // --- Contact Inquiries ---
+    function isValidInquiry(data) {
+      return data.keys().hasAll(['id', 'name', 'phone', 'message']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 120 &&
+        data.phone is string && data.phone.size() >= 10 && data.phone.size() <= 20 &&
+        data.message is string && data.message.size() > 0 && data.message.size() <= 1000 &&
+        (!('email' in data) || (data.email is string && data.email.size() <= 128));
+    }
+
+    match /inquiries/{inquiryId} {
+      allow read: if isAdmin();
+      allow create: if isValidId(inquiryId) && isValidInquiry(incoming());
+      allow update, delete: if isAdmin();
+    }
+  }
+}
